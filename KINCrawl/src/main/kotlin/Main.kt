@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
     val targetUrl =
         "https://kin.naver.com/search/list.naver?query=%EA%B0%B1%EB%85%84%EA%B8%B0&section=qna&dirId=7011404"
     val startPage = 1
-    val crawlAmount = 20
+    val crawlAmount = 50
     val targetFile = File("${System.getProperty("user.dir")}\\KINCrawl\\result.xlsx")
     val urls = parseUrls(targetUrl, crawlAmount, startPage)
     runBlocking {
