@@ -29,7 +29,7 @@
       사용자는 3개 질문 중 본인이 하려는 질문이 있을 시 선택하면 되고, 예상질문이 본인 질문과 관련 없으면 직접 텍스트 입력해서 질문합니다. (2023.10.08)
 
 
-- [X] [중간발표 PPT](https://drive.google.com/file/d/1AyuJmVKmEN0f1mqVhe2pG6iYASyp1jYi/view?usp=share_link)
+- [X] [중간발표 PPT]([https://drive.google.com/file/d/1AyuJmVKmEN0f1mqVhe2pG6iYASyp1jYi/view?usp=share_link](https://drive.google.com/file/d/1AyuJmVKmEN0f1mqVhe2pG6iYASyp1jYi/view?usp=share_link))
 
 
 
