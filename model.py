@@ -23,7 +23,7 @@ import requests
 from google.colab import drive
 drive.mount("/content/gdrive")
 
-openai.api_key = "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" #ChatGPT KEY 받아오기
+openai.api_key = "KEY" #ChatGPT KEY 받아오기
 model = SentenceTransformer('jhgan/ko-sroberta-multitask')
 
 #Gdrive Path
