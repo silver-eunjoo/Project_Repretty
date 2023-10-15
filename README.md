@@ -14,7 +14,7 @@
 - [X] [DB 하나로 만들기](https://docs.google.com/spreadsheets/d/1qucS86xmwJ-yiRBVI44m72sPlsz73-LMQrQPya46JQA/edit?usp=sharing)
 
 
-- [ ] 멘토님께 OpenAI key 받도록 결제 부탁드리기
+- [X] 멘토님께 OpenAI key 받도록 결제 부탁드리기
       -> 교수님께 문의 드리기.
 
 
