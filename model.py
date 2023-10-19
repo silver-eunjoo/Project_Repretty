@@ -23,6 +23,7 @@ import requests
 from google.colab import drive
 drive.mount("/content/gdrive")
 
+#api 키 에러나서 재발급 받았습니당
 openai.api_key = "KEY" #ChatGPT KEY 받아오기
 model = SentenceTransformer('jhgan/ko-sroberta-multitask')
 
@@ -80,9 +81,13 @@ while True:
   print("highest :")
   print(train_data.loc[train_data['score'].idxmax()]['score']) # 가장 큰 cos_sim 수치를 나타냄. = high_dist
 
+  print(f"general chatbot : {answer}")
+  print(text)
   high_dist = train_data.loc[train_data['score'].idxmax()]['score']
 
   texts.append({"role":"user", "content": text},)
+
+  print(texts)
 
   if high_dist <= 0.64 :
       chat = openai.ChatCompletion.create(
@@ -118,3 +123,94 @@ while True:
 # 2번 질문에 대한 답은 자연스러운 것 같음. (high_dist : 0.68)
 
 # => 기준점을 0.64로 조정함.
+
+#ChatGPT 주제 유사한지?
+def isSimilar(sentence, subject) :
+  chat = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=[{"role": "system", "content": 'assistant는 갱년기에 관한 상담을 해주는 상담가이다'}, {"role" : "user", "content" : "'{0}'라는 질문과 {1}가 어느정도 관련성이 있을경우 'true'라고만 답해주고 그렇지 않거나 판단할 수 없다면 'false'라고만 답해줘".format(sentence, subject)}]
+        )
+  reply = chat.choices[0].message.content
+  print(f"Repretty chatbot : {reply}")
+
+isSimilar("너무 우울하네요", "갱년기")
+
+isSimilar("나 혼자 있고 싶어", "갱년기")
+
+isSimilar("으라차차차차", "갱년기")
+
+isSimilar("행복한 하루 되세요", "갱년기")
+
+isSimilar("지금 몇시야?", "갱년기")
+
+# 주제가 갱년기와 관련이 있는지 판단하는 함수
+
+def isSimilar(question):
+  theme = [{"role" : "user", "content": ""},]
+  question = "\"" + question + "\"라는 말은 갱년기와 관련이 있을까? 조금이라도 관련있으면 True, 그게 아니라면 False로만 대답해줘." #질문을 조금만 바꿔도 값이 달라질 수 있으니 유의
+  # print(question)
+  theme.append({"role":"user", "content": question},)
+
+  # print(theme)
+  chat = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=theme
+        )
+  reply = chat.choices[0].message.content
+  # print(f"Repretty chatbot : {reply}")
+
+  if(reply == "True"):
+    return 1
+  else :
+    return 0
+
+num = isSimilar("지금 몇시야?")
+num
+
+isSimilar("너무 우울하네요")
+
+isSimilar("나 혼자 있고 싶어")
+
+texts = [{"role" : "user", "content": ""},]
+
+while True:
+  text = input('유저: ')
+  embedding = model.encode(text)
+  train_data['score'] = train_data.apply(lambda x: cos_sim(x['embedding'], embedding), axis=1)
+  print(train_data['score'].idxmax()) # score가 가장 높은 행 번호 출력
+  answer = train_data.loc[train_data['score'].idxmax()]['A'] # score 가장 높은 행의 Answer 리턴
+  print("highest :")
+  print(train_data.loc[train_data['score'].idxmax()]['score']) # 가장 큰 cos_sim 수치를 나타냄. = high_dist
+
+  print(f"general chatbot : {answer}")
+  high_dist = train_data.loc[train_data['score'].idxmax()]['score']
+
+  texts.append({"role":"user", "content": text},)
+
+  print(texts)
+  questions = [{"role" : "user", "content": ""},]
+  question = "\"" + text + "\"에 후행될만한 질문을 갱년기와 관련해서 3개 예측해줘"
+  questions.append({"role":"user", "content": question},)
+
+  if isSimilar(text)==1 :
+      chat = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=questions
+        )
+      reply = chat.choices[0].message.content
+      print(f"예측 질문 : {reply}")
+
+  if high_dist <= 0.64 :
+      chat = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=texts
+        )
+      reply = chat.choices[0].message.content
+      print(f"Repretty chatbot : {reply}")
+      texts.append({"role": "assistant", "content" : reply})
+
+  else :
+    print(f"Repretty chatbot : {answer}")
+
+
+# 관련있을 때 질문 3가지 받는 것까지 구현 완료
+# 질문 refining, tokenizing 안 했음.
+# 1. ~ 2. ~ 3. ~ 여기서 질문만 따로 이차원 배열에 저장하는 코드 짜야함.
+# 질문 고르거나 입력하는 코드 짜야함.
+# 아악! 너무 많아.
