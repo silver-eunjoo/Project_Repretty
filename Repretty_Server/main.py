@@ -91,9 +91,9 @@ class Question(Resource):
                 def stream_gpt():
                     for message in request_chatgpt_stream(question):
                         text = message.choices[0].delta.content
-                        print(message)
-                        print(text)
                         if type(text) != NoneType and len(text):
+                            print(message)
+                            print(text)
                             yield text
                 return Response(flask.stream_with_context(stream_gpt()), mimetype='text/event-stream')
             else:
