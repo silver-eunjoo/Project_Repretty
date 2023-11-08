@@ -1,4 +1,5 @@
-from flask import Flask, request, abort  # Flask framework
+import flask
+from flask import Flask, request, abort, Response  # Flask framework
 from flask_restx import Api, Resource #Flask rest api
 
 import numpy as np
@@ -7,7 +8,7 @@ from numpy import dot
 from numpy.linalg import norm
 import urllib.request
 
-from openai import OpenAI
+from openai import OpenAI, NoneType
 from sentence_transformers import SentenceTransformer
 import openai
 import requests
@@ -57,17 +58,24 @@ def request_chatgpt(question):
     )
     reply = chat.choices[0].message.content
     return reply
+
+#stream화 할 수 있는 chatgpt api. 위 request함수랑 파라미터 조절해서 하나로 바꾸는게 좋을듯.
+def request_chatgpt_stream(question):
+    return client.chat.completions.create(
+        model="gpt-3.5-turbo", messages=[{"role" : "user", "content": question}], stream=True
+    )
+
 #/Question endpoint. post요청으로 질문 요청시 response
 @api.route('/question')
 class Question(Resource):
     """
     Request
-    {question : "blah blah"}
+    {"question" : "blah blah"}
     Response (text/event-stream)
-    {data : "안"} \n\n   {data : "녕"} \n\n ...
+    {"data" : "안"} \n\n   {"data" : "녕"} \n\n ...
 
     event-stream 미사용시
-    { recommend : true, answer : "안녕" } 이렇게 바로 반환해서 주제추천 할지 말지 결정할 필요 없긴한데..
+    { "recommend" : true, "answer" : "안녕" } 이렇게 바로 반환해서 주제추천 할지 말지 결정할 필요 없긴한데..
     chat-gpt 생성 결과값을 stream으로 이욯하기 위해선 event-stream 반환 필수.. stream에서 json 반환시 깔끔하지 않음..ㅠㅠ
     """
     def post(self):
@@ -80,8 +88,20 @@ class Question(Resource):
             answer, score = find_dataset_answer(question)
             print("score : " + str(score))
             if score <= 0.64:
-                answer = request_chatgpt(question)
-            return {"answer": answer}
+                def stream_gpt():
+                    for message in request_chatgpt_stream(question):
+                        text = message.choices[0].delta.content
+                        print(message)
+                        print(text)
+                        if type(text) != NoneType and len(text):
+                            yield text
+                return Response(flask.stream_with_context(stream_gpt()), mimetype='text/event-stream')
+            else:
+                def stream_answer():
+                    for char in answer:
+                        yield char
+                return Response(flask.stream_with_context(stream_answer()), mimetype='text/event-stream')
+
 
 @api.route("/recommend")
 class Recommend(Resource):
