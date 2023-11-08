@@ -1,0 +1,3 @@
+추후 추가예정...
+![GIF 2023-11-08 오후 9-55-32](https://github.com/silver-eunjoo/Project_Repretty/assets/114974288/5b01b80a-7c38-437a-82b6-bee37763e039)
+일단 클라이언트 작동 영상입니다
