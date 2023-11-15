@@ -57,7 +57,8 @@ def find_dataset_answer(question):
 
 
 def request_chatgpt(question: list, system: list = None, assistant: list = None, stream=False):
-    #파라미터 입력
+    # 파라미터 입력
+    # TODO message 이력 유지?
     message = []
     if system is not None:
         for msg in system:
@@ -67,7 +68,7 @@ def request_chatgpt(question: list, system: list = None, assistant: list = None,
             message.append({"role": "assistant", "content": msg})
     for msg in question:
         message.append({"role": "user", "content": msg})
-    #api 호출
+    # api 호출
     chat = client.chat.completions.create(
         model="gpt-3.5-turbo", messages=message, stream=stream
     )
@@ -90,36 +91,51 @@ class Question(Resource):
     event-stream 미사용시
     { "recommend" : true, "answer" : "안녕" } 이렇게 바로 반환해서 주제추천 할지 말지 결정할 필요 없긴한데..
     chat-gpt 생성 결과값을 stream으로 이욯하기 위해선 event-stream 반환 필수.. stream에서 json 반환시 깔끔하지 않음..ㅠㅠ
+
+    11/15 : json의 형식으로 event-stream에 전송할경우 상당히 불안정해짐.
     """
 
     def post(self):
         body = request.get_json(force=True)
         print(body)
-        question = body['question']  # 질문
-        if question is None:
+        if "question" not in body:
             abort(400, "need question parameter")
-        else:
-            answer, score = find_dataset_answer(question)
-            print("score : " + str(score))
-            if score <= 0.64:
-                def stream_gpt():
-                    for message in request_chatgpt(question=list([question]), stream=True):
-                        text = message.choices[0].delta.content
-                        if type(text) != NoneType and len(text):
-                            print(text)
-                            yield text
+        question = body['question']  # 질문
+        answer, score = find_dataset_answer(question)
+        print("score : " + str(score))
+        if score <= 0.64:
+            def stream_gpt():
+                for message in request_chatgpt(question=list([question]), stream=True):
+                    text = message.choices[0].delta.content
+                    if type(text) != NoneType and len(text):
+                        print(text)
+                        yield text
 
-                return Response(flask.stream_with_context(stream_gpt()), mimetype='text/event-stream')
-            else:
-                return Response(flask.stream_with_context((char for char in answer)), mimetype='text/event-stream') #한글자식 리턴
+            return Response(flask.stream_with_context(stream_gpt()), mimetype='text/event-stream')
+        else:
+            return Response(flask.stream_with_context((char for char in answer)),
+                            mimetype='text/event-stream')  # 한글자식 리턴
 
 
 @api.route("/recommend")
 class Recommend(Resource):
     def post(self):
-        question = request.json.get['question']  # 질문
-        if question is None:
-            abort(400, "need question parameter")
+        body = request.get_json(force=True)
+        print(body)
+        if "question" not in body or "answer" not in body:
+            abort(400, "need question and answer parameter")
+        question = body['question']  # 질문
+        answer = body['answer']  # 답변
+        _, score = find_dataset_answer(question)
+        # 0.64 이하의 값은 추천하지 않음. 그보다 높은 값일경우 chatgpt에 요청함
+        if score <= 0.64:
+            return {"isRecommend": False, "list": []}
+        else:
+            #영어로 요청시 응답속도 빨라진다는 이야기가.. -> 더 길어져서 느려짐
+            return {"isRecommend": True, "list": request_chatgpt(
+                question=list(
+                    ["질문이 '" + question + "'이고 답변이 '" + answer + "' 일때 다음 질문으로 할만한 문장을 간단하게 3개 제시해줘."])).split(
+                "\n")}
 
 
 if __name__ == "__main__":
