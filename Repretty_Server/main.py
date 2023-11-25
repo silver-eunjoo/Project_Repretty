@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
-api = Api(app)
+api = Api(app, version='1.0', title='Repretty API Server')
 
 
 def cos_sim(A, B):
@@ -96,6 +96,7 @@ class Question(Resource):
     """
 
     def post(self):
+        """요청된 Question paramter를 이용하여 답변을 text/event-stream으로 반환합니다."""
         body = request.get_json(force=True)
         print(body)
         if "question" not in body:
@@ -120,6 +121,7 @@ class Question(Resource):
 @api.route("/recommend")
 class Recommend(Resource):
     def post(self):
+        """요청된 question과 answer를 이용하여 예상되는 다음 질문을 반환합니다. 갱년기와 관련이 없는 주제일경우 빈 리스트가 반환됩니다."""
         body = request.get_json(force=True)
         print(body)
         if "question" not in body or "answer" not in body:
