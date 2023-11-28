@@ -37,7 +37,7 @@ def get_model():
 def load_dataset():
     print("Loading datasets..")
     train_data = pd.read_csv(
-        'https://docs.google.com/spreadsheets/d/1qucS86xmwJ-yiRBVI44m72sPlsz73-LMQrQPya46JQA/export?format=csv')
+        'https://drive.google.com/file/d/1YdeNo_nBzSF-kwdvVHSQrsEF9QpyMaBE/view?usp=share_link')
     train_data.head(20)
     # NaN 제거하기
     train_data.dropna(axis=1)
