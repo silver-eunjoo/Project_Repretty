@@ -67,8 +67,11 @@ def find_dataset_answer(question):
 
 def request_chatgpt(question: list, system: list = None, assistant: list = None, stream=False, maintain_record=False):
     # 파라미터 입력
-    # TODO message 이력 유지?
+    # ex) 다음 두 숫자를 말하면 더한값을 말해줘 -> 10, 20 이런식의 호출이 가능하게. response는 저장안해도 될듯.
     message = []
+    if maintain_record:
+        for record in message_record:
+            message.append(record)
     if system is not None:
         for msg in system:
             message.append({"role": "system", "content": msg})
@@ -77,12 +80,19 @@ def request_chatgpt(question: list, system: list = None, assistant: list = None,
             message.append({"role": "assistant", "content": msg})
     for msg in question:
         message.append({"role": "user", "content": msg})
+        if maintain_record:
+            message_record.append({"role": "user", "content": msg})
     # api 호출
     chat = client.chat.completions.create(
         model="gpt-3.5-turbo", messages=message, stream=stream
     )
     if stream:
-        return chat  # stream이 활성화일경우 제너레이터 반환
+        def stream_gpt():
+            for response in chat:
+                text = response.choices[0].delta.content
+                if type(text) != NoneType and len(text):
+                    yield text
+        return stream_gpt()  # stream이 활성화일경우 제너레이터 반환
     else:
         reply = chat.choices[0].message.content  # 일반 답변 반환
         return reply
@@ -114,14 +124,7 @@ class Question(Resource):
         answer, score = find_dataset_answer(question)
         print("score : " + str(score))
         if score <= 0.64:
-            def stream_gpt():
-                for message in request_chatgpt(question=list([question]), stream=True):
-                    text = message.choices[0].delta.content
-                    if type(text) != NoneType and len(text):
-                        print(text)
-                        yield text
-
-            return Response(flask.stream_with_context(stream_gpt()), mimetype='text/event-stream')
+            return Response(flask.stream_with_context(request_chatgpt(question=list([question]), stream=True, maintain_record=True, system=list("갱년기를 겪고 있는 사람을 위한 챗봇이다. 대답은 한국어로만 진행해야한다."))), mimetype='text/event-stream')
         else:
             return Response(flask.stream_with_context((char for char in answer)),
                             mimetype='text/event-stream')  # 한글자식 리턴
