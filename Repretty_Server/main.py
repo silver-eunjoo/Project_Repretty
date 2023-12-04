@@ -18,6 +18,8 @@ import os
 app = Flask(__name__)
 api = Api(app, version='1.0', title='Repretty API Server')
 
+message_record = []
+
 
 def cos_sim(A, B):
     return dot(A, B) / (norm(A) * norm(B))
@@ -35,16 +37,23 @@ def get_model():
 
 
 def load_dataset():
+    file_path = str(os.getcwd()) + "/dataset.pkl"
     print("Loading datasets..")
-    train_data = pd.read_csv(
-        'https://drive.google.com/file/d/1YdeNo_nBzSF-kwdvVHSQrsEF9QpyMaBE/view?usp=share_link')
-    train_data.head(20)
-    # NaN 제거하기
-    train_data.dropna(axis=1)
-    print("Applying Embedding..")
-    train_data['embedding'] = train_data.apply(lambda row: get_model().encode(row.Q), axis=1)
-    print("dataset load end.")
-    return train_data
+    if os.path.isfile(file_path):
+        local_data = pd.read_pickle(file_path)  # embeding까지 적용된 pickle로드 pickle사용시 파이썬 객체를 그대로 저장해서 불러오기 좋음
+    else:
+        local_data = pd.read_csv(
+            'https://drive.google.com/u/1/uc?id=1YdeNo_nBzSF-kwdvVHSQrsEF9QpyMaBE&export=download')  # 다운로드 링크로 넣어야 csv파일이 정상적으로 로드 되네용
+        local_data.head(20)
+        # NaN 제거하기
+        local_data.dropna(axis=1)
+        print("Applying Embedding..")
+        local_data['embedding'] = local_data.apply(lambda row: get_model().encode(row.Q), axis=1)
+        print("dataset load end.")
+        local_data.to_pickle(file_path)
+        print("Saving file completed.")
+
+    return local_data
 
 
 def find_dataset_answer(question):
@@ -56,7 +65,7 @@ def find_dataset_answer(question):
     return answer, score
 
 
-def request_chatgpt(question: list, system: list = None, assistant: list = None, stream=False):
+def request_chatgpt(question: list, system: list = None, assistant: list = None, stream=False, maintain_record=False):
     # 파라미터 입력
     # TODO message 이력 유지?
     message = []
@@ -133,7 +142,7 @@ class Recommend(Resource):
         if score <= 0.64:
             return {"isRecommend": False, "list": []}
         else:
-            #영어로 요청시 응답속도 빨라진다는 이야기가.. -> 더 길어져서 느려짐
+            # 영어로 요청시 응답속도 빨라진다는 이야기가.. -> 더 길어져서 느려짐
             return {"isRecommend": True, "list": request_chatgpt(
                 question=list(
                     ["질문이 '" + question + "'이고 답변이 '" + answer + "' 일때 다음 질문으로 할만한 문장을 간단하게 3개 제시해줘."])).split(
