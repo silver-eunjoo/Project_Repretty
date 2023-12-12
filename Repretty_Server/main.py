@@ -154,6 +154,9 @@ class Recommend(Resource):
 
 if __name__ == "__main__":
     load_dotenv()  # env파일로부터 api키 흭득
-    client = OpenAI(api_key=os.environ.get("openai.key"))  # 왜 바뀐거지..
+    api_key = os.environ.get("openai.key")
+    if api_key is None:
+        print("Api key doesn't valid. put 'openai.key' in .env file.")
+    client = OpenAI(api_key=api_key)  # 왜 바뀐거지..
     train_data = load_dataset()  # init시 데이터셋 로드
     app.run(debug=False, host='127.0.0.1', port=80)
